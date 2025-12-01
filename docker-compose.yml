@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  minecraft-bot:
+    build: .
+    container_name: minecraft-afk-bot
+    restart: unless-stopped
+    environment:
+      - BOT_USERNAME=AFKBot
+      - SERVER_HOST=server.dispearson.tech
+      - SERVER_PORT=25565
+      - RECONNECT_DELAY=5000
+      - ANTI_AFK_INTERVAL=30000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - minecraft-network
+
+networks:
+  minecraft-network:
+    driver: bridge
