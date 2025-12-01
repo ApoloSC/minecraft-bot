@@ -16,7 +16,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "mineflayer": "^4.20.1"
+    "mineflayer": "^4.33.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
