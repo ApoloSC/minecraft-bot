@@ -4,6 +4,7 @@ const mineflayer = require('mineflayer');
 const BOT_USERNAME = process.env.BOT_USERNAME || 'AFKBot';
 const SERVER_HOST = process.env.SERVER_HOST || 'server.dispearson.tech';
 const SERVER_PORT = parseInt(process.env.SERVER_PORT) || 25565;
+const MINECRAFT_VERSION = process.env.MINECRAFT_VERSION || '1.21.1';
 const RECONNECT_DELAY = parseInt(process.env.RECONNECT_DELAY) || 5000;
 const ANTI_AFK_INTERVAL = parseInt(process.env.ANTI_AFK_INTERVAL) || 30000;
 
@@ -15,13 +16,14 @@ function createBot() {
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
-    version: '1.21.1', // Especifica la versión del servidor
+    version: MINECRAFT_VERSION,
     auth: 'offline' // Para servidores no premium
   });
 
   bot.on('login', () => {
     console.log(`✅ Bot conectado como ${bot.username}`);
     console.log(`📍 Servidor: ${SERVER_HOST}:${SERVER_PORT}`);
+    console.log(`🎮 Versión de Minecraft: ${MINECRAFT_VERSION}`);
     startAntiAfk();
   });
 
@@ -37,19 +39,22 @@ function createBot() {
   });
 
   bot.on('kicked', (reason) => {
-    console.log(`⚠️ Bot expulsado: ${reason}`);
+    console.log(`⚠️ Bot expulsado del servidor`);
+    console.log(`📋 Razón: ${reason}`);
     stopAntiAfk();
     reconnect();
   });
 
   bot.on('error', (err) => {
     console.error('❌ Error:', err.message);
+    if (err.code) console.error('📋 Código de error:', err.code);
     stopAntiAfk();
     reconnect();
   });
 
-  bot.on('end', () => {
+  bot.on('end', (reason) => {
     console.log('🔌 Conexión terminada');
+    if (reason) console.log('📋 Razón:', reason);
     stopAntiAfk();
     reconnect();
   });
