@@ -12,13 +12,22 @@ let bot;
 let antiAfkInterval;
 
 function createBot() {
-  bot = mineflayer.createBot({
+  // Intenta primero con la versión especificada, luego con auto-detección
+  const versionToUse = MINECRAFT_VERSION === 'false' ? false : MINECRAFT_VERSION;
+  
+  const botOptions = {
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
-    version: MINECRAFT_VERSION,
-    auth: 'offline' // Para servidores no premium
-  });
+    auth: 'offline', // Para servidores no premium
+    hideErrors: false,
+    checkTimeoutInterval: 60000, // Aumentar timeout
+    version: versionToUse
+  };
+  
+  console.log('🔧 Opciones del bot:', JSON.stringify(botOptions, null, 2));
+  
+  bot = mineflayer.createBot(botOptions);
 
   bot.on('login', () => {
     console.log(`✅ Bot conectado como ${bot.username}`);
