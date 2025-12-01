@@ -1,5 +1,4 @@
 const mineflayer = require('mineflayer');
-const antiafk = require('mineflayer-antiafk');
 
 // Configuración desde variables de entorno
 const BOT_USERNAME = process.env.BOT_USERNAME || 'AFKBot';
@@ -7,47 +6,34 @@ const SERVER_HOST = process.env.SERVER_HOST || 'server.dispearson.tech';
 const SERVER_PORT = parseInt(process.env.SERVER_PORT) || 25565;
 const MINECRAFT_VERSION = process.env.MINECRAFT_VERSION || '1.21.1';
 const RECONNECT_DELAY = parseInt(process.env.RECONNECT_DELAY) || 5000;
+const ANTI_AFK_INTERVAL = parseInt(process.env.ANTI_AFK_INTERVAL) || 30000;
 
 let bot;
+let antiAfkInterval;
 
 function createBot() {
-  const botOptions = {
+  console.log('🔧 Configuración del bot:');
+  console.log(`   Usuario: ${BOT_USERNAME}`);
+  console.log(`   Servidor: ${SERVER_HOST}:${SERVER_PORT}`);
+  console.log(`   Versión: ${MINECRAFT_VERSION}`);
+  
+  bot = mineflayer.createBot({
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
     version: MINECRAFT_VERSION,
-    auth: 'offline',
-    hideErrors: false
-  };
-  
-  console.log('🔧 Conectando con opciones:', JSON.stringify(botOptions, null, 2));
-  
-  bot = mineflayer.createBot(botOptions);
-  
-  // Cargar plugin anti-AFK
-  bot.loadPlugin(antiafk);
+    auth: 'offline'
+  });
 
   bot.on('login', () => {
     console.log(`✅ Bot conectado como ${bot.username}`);
-    console.log(`📍 Servidor: ${SERVER_HOST}:${SERVER_PORT}`);
-    console.log(`🎮 Versión: ${MINECRAFT_VERSION}`);
+    startAntiAfk();
   });
 
   bot.on('spawn', () => {
     console.log('🎮 Bot spawneado en el servidor');
     const pos = bot.entity.position;
     console.log(`📌 Posición: X=${pos.x.toFixed(2)}, Y=${pos.y.toFixed(2)}, Z=${pos.z.toFixed(2)}`);
-    
-    // Configurar y activar anti-AFK
-    bot.afk.setOptions({
-      actions: ['rotate', 'jump', 'swingArm'], // Acciones simples
-      fishing: false,
-      minInterval: 30000, // Mínimo 30 segundos entre acciones
-      maxInterval: 60000  // Máximo 60 segundos entre acciones
-    });
-    
-    bot.afk.start();
-    console.log('🔄 Sistema anti-AFK activado');
   });
 
   bot.on('chat', (username, message) => {
@@ -58,57 +44,87 @@ function createBot() {
   bot.on('kicked', (reason) => {
     console.log(`⚠️ Bot expulsado del servidor`);
     console.log(`📋 Razón:`, JSON.stringify(reason));
+    stopAntiAfk();
     reconnect();
   });
 
   bot.on('error', (err) => {
     console.error('❌ Error:', err.message);
-    if (err.code) console.error('📋 Código:', err.code);
+    stopAntiAfk();
   });
 
   bot.on('end', (reason) => {
     console.log('🔌 Conexión terminada');
     if (reason) console.log('📋 Razón:', reason);
+    stopAntiAfk();
     reconnect();
-  });
-
-  bot.on('health', () => {
-    if (bot.health < 5) {
-      console.log('⚠️ Salud baja, deteniendo anti-AFK');
-      bot.afk.stop();
-    }
   });
 
   bot.on('death', () => {
     console.log('💀 El bot murió, respawneando...');
     bot.chat('/respawn');
-    setTimeout(() => {
-      if (bot.afk) bot.afk.start();
-    }, 2000);
   });
 }
 
+function startAntiAfk() {
+  console.log(`🔄 Anti-AFK activado (cada ${ANTI_AFK_INTERVAL/1000}s)`);
+  
+  antiAfkInterval = setInterval(() => {
+    try {
+      if (!bot || !bot.entity) return;
+
+      // Rotación de cabeza aleatoria
+      const yaw = Math.random() * Math.PI * 2;
+      const pitch = (Math.random() - 0.5) * Math.PI / 2;
+      bot.look(yaw, pitch, false);
+
+      // 30% de probabilidad de saltar
+      if (Math.random() < 0.3) {
+        bot.setControlState('jump', true);
+        setTimeout(() => bot.setControlState('jump', false), 100);
+      }
+
+      // 20% de probabilidad de agacharse
+      if (Math.random() < 0.2) {
+        bot.setControlState('sneak', true);
+        setTimeout(() => bot.setControlState('sneak', false), 500);
+      }
+
+      console.log('✓ Movimiento anti-AFK');
+    } catch (err) {
+      console.error('Error en anti-AFK:', err.message);
+    }
+  }, ANTI_AFK_INTERVAL);
+}
+
+function stopAntiAfk() {
+  if (antiAfkInterval) {
+    clearInterval(antiAfkInterval);
+    antiAfkInterval = null;
+  }
+}
+
 function reconnect() {
-  console.log(`⏳ Reconectando en ${RECONNECT_DELAY/1000} segundos...`);
+  console.log(`⏳ Reconectando en ${RECONNECT_DELAY/1000}s...`);
   setTimeout(() => {
     console.log('🔄 Intentando reconectar...');
     createBot();
   }, RECONNECT_DELAY);
 }
 
-// Manejo de señales
 process.on('SIGINT', () => {
   console.log('\n👋 Cerrando bot...');
+  stopAntiAfk();
   if (bot) bot.quit();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n👋 Cerrando bot (SIGTERM)...');
+  console.log('\n👋 Cerrando bot...');
+  stopAntiAfk();
   if (bot) bot.quit();
   process.exit(0);
 });
 
-// Iniciar
 console.log('🚀 Iniciando bot AFK de Minecraft...');
 createBot();
