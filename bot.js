@@ -4,7 +4,8 @@ const mineflayer = require('mineflayer');
 const BOT_USERNAME = process.env.BOT_USERNAME || 'AFKBot';
 const SERVER_HOST = process.env.SERVER_HOST || 'server.dispearson.tech';
 const SERVER_PORT = parseInt(process.env.SERVER_PORT) || 25565;
-const MINECRAFT_VERSION = process.env.MINECRAFT_VERSION || '1.21.1';
+// Convertir "false" a booleano false, o usar la versión especificada
+const MINECRAFT_VERSION = process.env.MINECRAFT_VERSION === 'false' || !process.env.MINECRAFT_VERSION ? false : process.env.MINECRAFT_VERSION;
 const RECONNECT_DELAY = parseInt(process.env.RECONNECT_DELAY) || 5000;
 const ANTI_AFK_INTERVAL = parseInt(process.env.ANTI_AFK_INTERVAL) || 30000;
 
@@ -12,18 +13,19 @@ let bot;
 let antiAfkInterval;
 
 function createBot() {
-  // Intenta primero con la versión especificada, luego con auto-detección
-  const versionToUse = MINECRAFT_VERSION === 'false' ? false : MINECRAFT_VERSION;
-  
   const botOptions = {
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
     auth: 'offline', // Para servidores no premium
     hideErrors: false,
-    checkTimeoutInterval: 60000, // Aumentar timeout
-    version: versionToUse
+    checkTimeoutInterval: 60000 // Aumentar timeout
   };
+  
+  // Solo agregar version si no es false
+  if (MINECRAFT_VERSION !== false) {
+    botOptions.version = MINECRAFT_VERSION;
+  }
   
   console.log('🔧 Opciones del bot:', JSON.stringify(botOptions, null, 2));
   
