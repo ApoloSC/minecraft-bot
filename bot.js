@@ -15,7 +15,7 @@ function createBot() {
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
-    version: false, // Auto-detecta la versión
+    version: '1.21.1', // Especifica la versión del servidor
     auth: 'offline' // Para servidores no premium
   });
 
